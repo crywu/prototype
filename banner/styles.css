@@ -1,6 +1,6 @@
 /* ==========================================================================
-   L'ARTISAN DOUX — 全螢幕 10 款點心互動體驗樣式表
-   Design System: Fullscreen Animated Background + Glassmorphism + Physics
+   L'ARTISAN DOUX — 零重力錯落漂浮點心全景樣式表
+   Design System: Fullscreen Aurora + Frameless Floating Subjects + Zero-G Physics
    ========================================================================== */
 
 :root {
@@ -13,10 +13,6 @@
   --accent-purple: #8b5cf6;
   --accent-cyan: #06b6d4;
   
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --glass-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-  
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Outfit', sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
@@ -26,9 +22,6 @@ body.theme-light {
   --bg-app: #fdfaf6;
   --text-main: #1f2937;
   --text-muted: #6b7280;
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(0, 0, 0, 0.12);
-  --glass-shadow: 0 25px 50px rgba(245, 158, 11, 0.15);
 }
 
 * {
@@ -63,9 +56,9 @@ body, html {
 .aurora {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.35;
-  animation: floatAurora 20s infinite alternate ease-in-out;
+  filter: blur(130px);
+  opacity: 0.38;
+  animation: floatAurora 22s infinite alternate ease-in-out;
   will-change: transform;
 }
 
@@ -79,32 +72,32 @@ body, html {
 }
 
 .aurora-2 {
-  width: 60vw;
-  height: 60vh;
+  width: 65vw;
+  height: 65vh;
   background: radial-gradient(circle, var(--accent-rose) 0%, transparent 70%);
   bottom: -15vh;
   left: -10vw;
-  animation-duration: 22s;
+  animation-duration: 24s;
   animation-delay: -5s;
 }
 
 .aurora-3 {
-  width: 50vw;
-  height: 50vh;
+  width: 55vw;
+  height: 55vh;
   background: radial-gradient(circle, var(--accent-purple) 0%, transparent 70%);
-  top: 30vh;
-  left: 30vw;
-  animation-duration: 26s;
+  top: 25vh;
+  left: 25vw;
+  animation-duration: 28s;
   animation-delay: -10s;
 }
 
 @keyframes floatAurora {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(100px, 60px) scale(1.15); }
-  100% { transform: translate(-60px, -80px) scale(0.9); }
+  50% { transform: translate(120px, 70px) scale(1.2); }
+  100% { transform: translate(-70px, -90px) scale(0.88); }
 }
 
-/* 懸浮粒子群 */
+/* 懸浮星屑粒子群 */
 .particles-container {
   position: absolute;
   inset: 0;
@@ -113,7 +106,7 @@ body, html {
 
 .particle {
   position: absolute;
-  background: radial-gradient(circle, #fff 0%, rgba(245, 158, 11, 0.8) 50%, transparent 100%);
+  background: radial-gradient(circle, #fff 0%, rgba(245, 158, 11, 0.85) 50%, transparent 100%);
   border-radius: 50%;
   pointer-events: none;
   animation: floatUp infinite linear;
@@ -121,17 +114,17 @@ body, html {
 
 @keyframes floatUp {
   0% { transform: translateY(100vh) scale(0); opacity: 0; }
-  20% { opacity: 0.8; }
-  80% { opacity: 0.8; }
-  100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+  20% { opacity: 0.85; }
+  80% { opacity: 0.85; }
+  100% { transform: translateY(-10vh) scale(1.6); opacity: 0; }
 }
 
-/* 科技網格與暗角 */
+/* 科技網格與深邃暗角 */
 .bg-grid {
   position: absolute;
   inset: 0;
   background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: 44px 44px;
   z-index: 3;
 }
 
@@ -142,12 +135,12 @@ body.theme-light .bg-grid {
 .bg-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+  background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
   z-index: 4;
 }
 
 body.theme-light .bg-vignette {
-  background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.15) 100%);
+  background: radial-gradient(circle at center, transparent 55%, rgba(0, 0, 0, 0.15) 100%);
 }
 
 /* ==========================================================================
@@ -281,82 +274,75 @@ body.theme-light .bg-vignette {
   pointer-events: none; /* 讓空白處可點擊或看見背景，點心單品開啟 pointer-events */
 }
 
-/* 點心單品卡片封裝 (Dessert Item) */
+/* 點心單品封裝 — 移除原本方框，改為純粹空間漂浮座標點 */
 .dessert-item {
   position: absolute;
-  width: 160px;
-  height: 160px;
   pointer-events: auto;
   cursor: pointer;
   user-select: none;
   top: 0;
   left: 0;
-  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, filter 0.4s ease;
+  /* 平滑縮放與位置過渡 */
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, filter 0.4s ease;
   will-change: transform;
 }
 
-/* 玻璃擬態圓盤卡片 (一開始進場與懸浮時【完全不含文字】，純粹美味展露) */
+/* 
+ * 🔥 核心修改：移除原本甜點的圓角方框與底盤！
+ * 將 .dessert-card 改為完全透明、無邊框、無背景、無陰影的純淨容器！
+ * 只留下甜點去背主體本身！
+ */
 .dessert-card {
   width: 100%;
   height: 100%;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 32px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--glass-shadow);
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 16px;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  overflow: visible;
 }
 
-/* 懸浮狀態：放大光芒 */
-.dessert-item:hover .dessert-card {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(245, 158, 11, 0.7);
-  box-shadow: 0 30px 80px rgba(245, 158, 11, 0.45), 0 0 0 2px rgba(245, 158, 11, 0.3);
+/* 點心去背圖像容器 (單純凸顯食物主體與 3D 浮空立體陰影) */
+.dessert-img-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 賦予去背甜點逼真的空間浮空陰影 */
+  filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.75));
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.45s ease;
 }
 
-/* 點擊選中狀態：皇室頂級金框與強烈流光 */
-.dessert-item.is-selected .dessert-card {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(244, 63, 94, 0.15));
-  border: 2px solid var(--accent-gold);
-  box-shadow: 0 40px 100px rgba(245, 158, 11, 0.6), 0 0 40px rgba(245, 158, 11, 0.4);
+/* 懸浮狀態：去背甜點主體放大、微微傾斜並釋放金色光芒 */
+.dessert-item:hover .dessert-img-wrap {
+  transform: scale(1.35) rotate(8deg);
+  filter: drop-shadow(0 30px 60px rgba(245, 158, 11, 0.65));
 }
 
-/* 當其他點心被選中時，未選中的點心半透明弱化並作為背景點綴 */
+/* 點擊選中狀態：主角主體極致放大、打亮並定格正位 */
+.dessert-item.is-selected .dessert-img-wrap {
+  transform: scale(1.8) rotate(0deg);
+  filter: drop-shadow(0 35px 80px rgba(245, 158, 11, 0.8));
+}
+
+/* 當其他點心被選中時，未被選中的點心半透明弱化退回背景 */
 .dessert-item.is-dimmed {
-  opacity: 0.35;
-  filter: grayscale(40%) blur(1px);
+  opacity: 0.28;
+  filter: grayscale(45%) blur(1.5px);
   pointer-events: auto;
 }
 
 .dessert-item.is-dimmed:hover {
   opacity: 0.85;
   filter: grayscale(0%) blur(0);
-}
-
-/* 點心圖像 element */
-.dessert-img-wrap {
-  width: 82%;
-  height: 82%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.dessert-item:hover .dessert-img-wrap {
-  transform: scale(1.15) rotate(6deg);
-}
-
-.dessert-item.is-selected .dessert-img-wrap {
-  transform: scale(1.2) rotate(0deg);
-  filter: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.8));
 }
 
 .dessert-img {
@@ -388,19 +374,19 @@ body.theme-light .bg-vignette {
 }
 
 .info-card-glass {
-  background: rgba(18, 20, 30, 0.85);
+  background: rgba(18, 20, 30, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 32px;
   padding: 40px;
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 body.theme-light .info-card-glass {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.18);
 }
 
 .info-header {
@@ -496,7 +482,7 @@ body.theme-light .info-card-glass {
 }
 
 /* ==========================================================================
-   底部提示列 (Bottom Hint)
+   底部提示列
    ========================================================================== */
 .bottom-hint {
   position: absolute;
@@ -510,17 +496,17 @@ body.theme-light .info-card-glass {
 }
 
 .hint-content {
-  background: rgba(14, 16, 23, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 16, 23, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 10px 24px;
   border-radius: 999px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13px;
   color: var(--text-muted);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 body.theme-light .hint-content {
