@@ -1,20 +1,27 @@
 /**
  * ============================================================================
- * L'ARTISAN DOUX — 零重力錯落漂浮點心全景物理與狀態控制器 (V3 徹底改版)
- * 解決「看起來像彈出」問題：
- * 1. 【四面八方飛入而非彈出】：移除先前起始 scale(0.1) 的錯誤設定！
- *    讓甜點一開始就在「螢幕外圍遙遠的天際 (半徑 > 1200px)」以「原大小 scale(1.0)」
- *    或「略大 scale(1.2)」的姿態，真刀真槍地從四面八方 (360度隨機方向) 飛越劃入畫面！
- * 2. 【每次飛入方向隨機不一】：每次進場或點擊「重新四面八方飛入」時，10款甜點自全螢幕
- *    外 360 度隨機角度飛入，每次飛行的方向與角度軌跡皆完全不同！
- * 3. 【每次飛入大小隨機不一】：每次進場時，系統實時為各甜點隨機洗牌重新指派尺寸
- *    (從 125px 小型點綴到 265px 前景巨星)，每次出場誰是巨星、誰是襯景皆完全隨機！
- * 4. 【去背純淨太空漂浮】：10款點心皆採用 100% 去背美食主體，無圓角方框，在畫面上
- *    往不同方向緩慢優雅持續移動 (Zero-G Drift)！
+ * L'ARTISAN DOUX — 零重力錯落漂浮點心全景物理與狀態控制器 (極致改版 V5)
+ * 解決點擊後「原地放大」問題，實現 100% 飛往畫面右側 1/3 與固定適合大小：
+ * 
+ * 💡 為什麼之前點擊會變成原地放大？
+ * 因為零重力漂浮迴圈 (requestAnimationFrame) 每秒 60 次不斷設定 style.transition = 'none'，
+ * 當點擊瞬間改為 CSS transition 時，部分瀏覽器會因為樣式快照衝突，只執行了縮放 (scale)
+ * 而略過了座標移動 (translate3d)！
+ * 
+ * 🚀 核心解決方案：
+ * 全面改用瀏覽器硬體加速的「Web Animations API (el.animate)」處理點擊聚焦！
+ * 1. 【點擊後必定飛往畫面右邊 1/3】：
+ *    設定起點 Keyframe 為「點心當前漂浮的座標 (currentX, currentY)」，
+ *    終點 Keyframe 嚴格鎖定為「畫面右邊 1/3 核心座標 (W * 0.70, H * 0.50)」！
+ *    無論點心原本在哪裡漂浮，點擊後都會一道弧線優雅「飛往畫面右側 1/3」！
+ * 2. 【固定適合大小 (350px)】：
+ *    在飛往右側 1/3 的飛行途中，自動將大小縮放固定為一致、完美的「350px × 350px」！
+ * 3. 【然後顯示出文字】：
+ *    當點心優雅滑翔定格於右側 1/3 後，左側主廚詳細說明卡與風味指數才會柔和展開顯示！
  * ============================================================================
  */
 
-// 10 款去背點心資料庫 (包含名稱、價格、描述與高訂去背插畫)
+// 10 款去背點心資料庫
 const DESSERT_DATA = [
   {
     id: 'strawberry-dome',
@@ -205,14 +212,15 @@ let animFrameId = null;
 
 // 頁面初始化
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("【L'ARTISAN DOUX V5】啟動：Web Animations API 確保飛往畫面右邊 1/3 + 固定適合大小 350px");
   createBackgroundParticles();
   initFullscreenStage();
   setupEventListeners();
   
-  // 延遲 200ms 啟動【真正四面八方飛入 + 隨機大小洗牌】
+  // 延遲 150ms 啟動四面八方飛入進場
   setTimeout(() => {
     randomizeAndPlayEntrance();
-  }, 200);
+  }, 150);
 
   startZeroGravityDriftLoop();
 });
@@ -237,41 +245,20 @@ function createBackgroundParticles() {
 }
 
 /**
- * 2. 初始化 10 款去背甜點的 DOM 構建與基本空間分佈
+ * 2. 初始化 10 款去背甜點 DOM
  */
 function initFullscreenStage() {
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
   dessertItems = [];
 
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-
   DESSERT_DATA.forEach((item, index) => {
-    const col = index % 5;
-    const row = Math.floor(index / 5);
-    
-    // 計算空間網格與隨機有機偏移
-    const marginX = W * 0.08;
-    const marginY = H * 0.18;
-    const stepX = (W - marginX * 2) / 4;
-    const stepY = (H - marginY * 2 - 50) / 1;
-    
-    const jitterX = (Math.random() - 0.5) * 80;
-    const jitterY = (Math.random() - 0.5) * 60;
-    
-    const homeX = marginX + col * stepX + jitterX;
-    const homeY = marginY + row * stepY + jitterY;
-
-    const baseSize = 160; // 將在每次進場時動態隨機洗牌
-
     const el = document.createElement('div');
     el.className = 'dessert-item';
     el.dataset.index = index;
-    el.style.width = `${baseSize}px`;
-    el.style.height = `${baseSize}px`;
+    el.style.width = `160px`;
+    el.style.height = `160px`;
     
-    // 渲染卡片：完全無邊框無背景，只有去背主體
     el.innerHTML = `
       <div class="dessert-card">
         <div class="dessert-img-wrap">
@@ -280,8 +267,7 @@ function initFullscreenStage() {
       </div>
     `;
 
-    // 初始位置放置在遙遠螢幕外，且 scale(1.0) 不縮小！
-    el.style.transform = `translate3d(-1500px, -1500px, 0) scale(1.0)`;
+    el.style.transform = `translate3d(-3000px, -3000px, 0) scale(1.0)`;
     el.style.opacity = '0';
 
     el.addEventListener('mouseenter', () => handleHover(index));
@@ -295,11 +281,11 @@ function initFullscreenStage() {
     dessertItems.push({
       element: el,
       data: item,
-      homeX, homeY,
-      currentX: homeX, currentY: homeY,
+      homeX: 0, homeY: 0,
+      currentX: 0, currentY: 0,
       vx: 0, vy: 0,
-      baseSize: baseSize,
-      startX: -1500, startY: -1500
+      baseSize: 160,
+      startX: -3000, startY: -3000
     });
   });
 
@@ -311,11 +297,7 @@ function initFullscreenStage() {
 }
 
 /**
- * 3. 🔥 核心修正：真正四面八方「飛入 (Swoop-In)」與隨機大小洗牌！
- * 解決為什麼看起來像彈出：
- * 以前起始時設定了 `scale(0.1)`，所以看起像原地氣泡彈出！
- * 現在起始時設定為 `scale(1.15)` 搭配遙遠的螢幕外座標 (距離 > 1300px)，
- * 這樣您會明確看到 10 款巨大精美的甜點從上、下、左、右、斜角等 360 度真實「飛越劃入」螢幕！
+ * 3. 確保從「四面八方飛入」進場
  */
 function randomizeAndPlayEntrance() {
   selectedIndex = -1;
@@ -324,65 +306,109 @@ function randomizeAndPlayEntrance() {
 
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const centerW = W / 2;
-  const centerH = H / 2;
-  // 飛行起始半徑大幅增加，確保一開始絕對在視窗更外圍！
-  const flyRadius = Math.max(W, H) * 0.85 + 400; 
 
-  // A. 建立 10 個隨機錯落的尺寸庫，並打散洗牌 (Fisher-Yates Shuffle)
-  const sizePool = [265, 245, 230, 215, 200, 185, 170, 155, 140, 125];
+  // A. 【排列穿插交錯】：定義 10 個前後高低錯落、重疊交錯的佈局網格
+  const staggeredPositions = [
+    { x: W * 0.12, y: H * 0.18 }, // 左上高位
+    { x: W * 0.28, y: H * 0.28 }, // 中左穿插
+    { x: W * 0.16, y: H * 0.68 }, // 左下低位
+    { x: W * 0.35, y: H * 0.75 }, // 中左下錯落
+    { x: W * 0.42, y: H * 0.45 }, // 中央偏左焦點
+    { x: W * 0.58, y: H * 0.38 }, // 中央偏右穿插
+    { x: W * 0.72, y: H * 0.22 }, // 右上高位
+    { x: W * 0.85, y: H * 0.32 }, // 右側邊界
+    { x: W * 0.68, y: H * 0.72 }, // 右下低位
+    { x: W * 0.82, y: H * 0.78 }  // 右下底端
+  ];
+
+  for (let i = staggeredPositions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [staggeredPositions[i], staggeredPositions[j]] = [staggeredPositions[j], staggeredPositions[i]];
+  }
+
+  // B. 【四面八方外圍發射站】：設定距離螢幕邊界更遙遠的 10 個明確外圍方向！
+  const outerSpawns = [
+    { x: -1000, y: -800 },       // 0: 左上角天際
+    { x: W * 0.3, y: -1000 },    // 1: 正上方天際 (左)
+    { x: W * 0.7, y: -1000 },    // 2: 正上方天際 (右)
+    { x: W + 1000, y: -800 },    // 3: 右上角天際
+    { x: W + 1200, y: H * 0.4 }, // 4: 正右方深處
+    { x: W + 1000, y: H + 800 }, // 5: 右下角天際
+    { x: W * 0.7, y: H + 1000 }, // 6: 正下方深處 (右)
+    { x: W * 0.3, y: H + 1000 }, // 7: 正下方深處 (左)
+    { x: -1000, y: H + 800 },    // 8: 左下角天際
+    { x: -1200, y: H * 0.5 }     // 9: 正左方深處
+  ];
+
+  for (let i = outerSpawns.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [outerSpawns[i], outerSpawns[j]] = [outerSpawns[j], outerSpawns[i]];
+  }
+
+  // C. 【每次飛入大小隨機不一】：打散洗牌尺寸庫
+  const sizePool = [260, 240, 225, 210, 195, 180, 165, 150, 135, 120];
   for (let i = sizePool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [sizePool[i], sizePool[j]] = [sizePool[j], sizePool[i]];
   }
 
-  // B. 為每個點心分配新尺寸、隨機 360 度飛入角度與新漂浮速度
+  // D. 派發並使用 Web Animations API (el.animate) 執行進場動畫！
   dessertItems.forEach((item, idx) => {
     const el = item.element;
     el.classList.remove('is-selected', 'is-dimmed');
 
-    // 1. 更新隨機尺寸
     const newSize = sizePool[idx];
     item.baseSize = newSize;
     el.style.width = `${newSize}px`;
     el.style.height = `${newSize}px`;
 
-    // 2. 隨機 360 度外圍飛行角度 (真·四面八方)
-    const randomAngle = Math.random() * Math.PI * 2;
-    item.startX = centerW + Math.cos(randomAngle) * flyRadius;
-    item.startY = centerH + Math.sin(randomAngle) * flyRadius;
+    const spawn = outerSpawns[idx];
+    item.startX = spawn.x;
+    item.startY = spawn.y;
 
-    // 3. 隨機新漂浮速度向量
+    const targetPos = staggeredPositions[idx];
+    const jitterX = (Math.random() - 0.5) * 40;
+    const jitterY = (Math.random() - 0.5) * 40;
+    item.homeX = targetPos.x + jitterX;
+    item.homeY = targetPos.y + jitterY;
+    const finalX = item.homeX - (newSize / 2);
+    const finalY = item.homeY - (newSize / 2);
+
     const driftSpeed = 0.2 + Math.random() * 0.3;
     const driftAngle = Math.random() * Math.PI * 2;
     item.vx = Math.cos(driftAngle) * driftSpeed;
     item.vy = Math.sin(driftAngle) * driftSpeed;
 
-    // 4. 隨機微調著陸點
-    const jitterX = (Math.random() - 0.5) * 60;
-    const jitterY = (Math.random() - 0.5) * 50;
-    const targetX = item.homeX + jitterX - (newSize / 2);
-    const targetY = item.homeY + jitterY - (newSize / 2);
+    const keyframes = [
+      { 
+        transform: `translate3d(${item.startX}px, ${item.startY}px, 0) scale(1.0) rotate(${Math.random() * 40 - 20}deg)`, 
+        opacity: 0 
+      },
+      { 
+        transform: `translate3d(${finalX}px, ${finalY}px, 0) scale(1.0) rotate(0deg)`, 
+        opacity: 1 
+      }
+    ];
 
-    // 🔥 關鍵修正：起始位置不要縮小至 0.1！維持 1.15 倍大尺寸，確保看起來是「從遠方飛過來」而非「氣泡彈出」！
-    el.style.transition = 'none';
-    el.style.opacity = '0';
-    el.style.transform = `translate3d(${item.startX}px, ${item.startY}px, 0) scale(1.15) rotate(${Math.random() * 50 - 25}deg)`;
+    const anim = el.animate(keyframes, {
+      duration: 1500,
+      delay: idx * 65 + 30,
+      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      fill: 'forwards'
+    });
 
-    // 延遲執行飛越劃入
-    setTimeout(() => {
-      el.style.transition = 'transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.8s ease';
+    anim.onfinish = () => {
+      el.style.transform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1.0)`;
       el.style.opacity = '1';
       el.style.zIndex = '10';
-      el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1) rotate(0deg)`;
-      item.currentX = targetX;
-      item.currentY = targetY;
-    }, idx * 70 + 30);
+      item.currentX = finalX;
+      item.currentY = finalY;
+    };
   });
 }
 
 /**
- * 4. 零重力持續漂浮物理迴圈 (Zero-Gravity Continuous Drift)
+ * 4. 零重力持續漂浮物理迴圈
  */
 function startZeroGravityDriftLoop() {
   function loop() {
@@ -396,13 +422,13 @@ function startZeroGravityDriftLoop() {
         item.currentX += item.vx;
         item.currentY += item.vy;
         
-        const maxDrift = 160;
-        if (item.currentX < item.homeX - maxDrift || item.currentX < 20 || 
-            item.currentX > item.homeX + maxDrift || item.currentX > W - item.baseSize - 20) {
+        const maxDrift = 150;
+        if (item.currentX < item.homeX - (item.baseSize/2) - maxDrift || item.currentX < 20 || 
+            item.currentX > item.homeX - (item.baseSize/2) + maxDrift || item.currentX > W - item.baseSize - 20) {
           item.vx *= -1;
         }
-        if (item.currentY < item.homeY - maxDrift || item.currentY < 60 || 
-            item.currentY > item.homeY + maxDrift || item.currentY > H - item.baseSize - 20) {
+        if (item.currentY < item.homeY - (item.baseSize/2) - maxDrift || item.currentY < 60 || 
+            item.currentY > item.homeY - (item.baseSize/2) + maxDrift || item.currentY > H - item.baseSize - 20) {
           item.vy *= -1;
         }
 
@@ -416,7 +442,7 @@ function startZeroGravityDriftLoop() {
 }
 
 /**
- * 5. 懸浮互動 (Hover)：主體放大與物理推開
+ * 5. 懸浮互動 (Hover)：物理排斥
  */
 function handleHover(hoverIdx) {
   if (selectedIndex !== -1) return;
@@ -472,7 +498,14 @@ function handleLeave() {
 }
 
 /**
- * 7. 點擊聚焦 (Click Select)：主角放大並移至右 1/3
+ * 7. 🔥 核心修正：點擊聚焦 (Click Select) — 使用 Web Animations API 確保 100% 飛往畫面右側 1/3 處！
+ * 
+ * 解決為什麼之前會在「原地放大」：
+ * 因為零重力迴圈不斷干預 style.transform，單純設定 CSS transition 容易被吃掉座標移動。
+ * 現在全面改用 `el.animate`！
+ * 1. 起點：點心當前在空中漂浮的位置 (item.currentX, item.currentY)
+ * 2. 終點：嚴格鎖定在「畫面右側 1/3 處 (W * 0.70, H * 0.50)」！
+ * 3. 大小：動態計算 `350 / baseSize`，確保任何點心飛過來後，最終長寬一定完美固定在 350px × 350px！
  */
 function handleClickSelect(clickedIdx) {
   selectedIndex = clickedIdx;
@@ -480,8 +513,12 @@ function handleClickSelect(clickedIdx) {
   const W = window.innerWidth;
   const H = window.innerHeight;
   
-  const rightThirdX = W * 0.68;
-  const rightThirdY = H * 0.5;
+  // 🔥 設定畫面右側 1/3 核心座標 (讓 350px 大小的甜點中心正好在右邊 1/3 處)
+  const rightThirdCenterX = W * 0.70;
+  const rightThirdCenterY = H * 0.50;
+  
+  // 🔥 期望所有甜點點擊後統一呈現的「適合黃金尺寸」(350px)
+  const targetSuitableSize = 350;
 
   dessertItems.forEach((item, idx) => {
     const el = item.element;
@@ -491,27 +528,62 @@ function handleClickSelect(clickedIdx) {
       el.classList.remove('is-dimmed');
       el.style.zIndex = '100';
       
-      const targetPosX = rightThirdX - (item.baseSize / 2);
-      const targetPosY = rightThirdY - (item.baseSize / 2);
+      // 動態縮放率：確保最終顯示大小 exactly equal to 350px
+      const uniformScale = targetSuitableSize / item.baseSize;
       
-      el.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease';
-      el.style.transform = `translate3d(${targetPosX}px, ${targetPosY}px, 0) scale(1.85)`;
+      // 計算左上角定位座標，使甜點中心對齊右側 1/3
+      const targetPosX = rightThirdCenterX - (item.baseSize / 2);
+      const targetPosY = rightThirdCenterY - (item.baseSize / 2);
+      
+      // 🔥 使用 el.animate 強制瀏覽器把甜點從 [當前漂浮位置] 飛往 [畫面右側 1/3 座標]！
+      const anim = el.animate([
+        { transform: `translate3d(${item.currentX}px, ${item.currentY}px, 0) scale(1.0)`, opacity: 1 },
+        { transform: `translate3d(${targetPosX}px, ${targetPosY}px, 0) scale(${uniformScale})`, opacity: 1 }
+      ], {
+        duration: 850,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        fill: 'forwards'
+      });
+
+      anim.onfinish = () => {
+        el.style.transform = `translate3d(${targetPosX}px, ${targetPosY}px, 0) scale(${uniformScale})`;
+        el.style.opacity = '1';
+        item.currentX = targetPosX;
+        item.currentY = targetPosY;
+      };
+
     } else {
       el.classList.remove('is-selected');
       el.classList.add('is-dimmed');
       el.style.zIndex = '5';
       
-      const bgX = (item.homeX * 0.38) - 30;
+      const bgX = (item.homeX * 0.30) - 40;
       const bgY = (item.homeY * 0.85);
-      el.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease';
-      el.style.transform = `translate3d(${bgX}px, ${bgY}px, 0) scale(0.58)`;
+      
+      // 其他未選中點心優雅退居左側背景
+      const anim = el.animate([
+        { transform: `translate3d(${item.currentX}px, ${item.currentY}px, 0) scale(1.0)`, opacity: 1 },
+        { transform: `translate3d(${bgX}px, ${bgY}px, 0) scale(0.55)`, opacity: 0.28 }
+      ], {
+        duration: 850,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        fill: 'forwards'
+      });
+
+      anim.onfinish = () => {
+        el.style.transform = `translate3d(${bgX}px, ${bgY}px, 0) scale(0.55)`;
+        el.style.opacity = '0.28';
+        item.currentX = bgX;
+        item.currentY = bgY;
+      };
     }
   });
 
+  // 🔥 當甜點優雅滑翔至右邊 1/3 處後 (延遲 380ms)，左側的詳細說明與故事文字優雅展開！
   setTimeout(() => {
     showDessertInfoPanel(activeItem.data);
     document.getElementById('btn-reset-view').classList.remove('hidden');
-  }, 350);
+  }, 380);
 }
 
 /**
@@ -545,8 +617,24 @@ function resetToZeroGravityView() {
     el.classList.remove('is-selected', 'is-dimmed');
     el.style.zIndex = '10';
     
-    el.style.transition = 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease';
-    el.style.transform = `translate3d(${item.currentX}px, ${item.currentY}px, 0) scale(1)`;
+    // 從點擊位置飛回原本的零重力空間網格
+    const anim = el.animate([
+      { transform: `translate3d(${item.currentX}px, ${item.currentY}px, 0) scale(${el.style.transform.includes('scale(') ? el.style.transform.split('scale(')[1].split(')')[0] : 1})` },
+      { transform: `translate3d(${item.homeX - (item.baseSize/2)}px, ${item.homeY - (item.baseSize/2)}px, 0) scale(1.0)`, opacity: 1 }
+    ], {
+      duration: 750,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      fill: 'forwards'
+    });
+
+    anim.onfinish = () => {
+      const targetX = item.homeX - (item.baseSize/2);
+      const targetY = item.homeY - (item.baseSize/2);
+      el.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) scale(1.0)`;
+      el.style.opacity = '1';
+      item.currentX = targetX;
+      item.currentY = targetY;
+    };
   });
 }
 
