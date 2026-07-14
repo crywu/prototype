@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nothing 耳機 3D Banner 展示 - Antigravity Demo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body, html {
       margin: 0;
@@ -20,6 +20,28 @@
         linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
       background-size: 40px 40px;
     }
+
+    /* ==========================================
+       🔥 1. 耳機後方的巨大粗體文字 (Background Giant Text)
+       ========================================== */
+    .bg-giant-text {
+      position: absolute;
+      top: 50%;
+      right: 3%;
+      transform: translateY(-50%);
+      z-index: 0; /* 處於最底層，位於 3D WebGL 耳機物件的正後方 */
+      pointer-events: none;
+      user-select: none;
+      text-align: right;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15vw;
+      line-height: 0.82;
+      font-weight: 900;
+      letter-spacing: -6px;
+      color: rgba(0, 0, 0, 0.08); /* 沉穩高雅的半透明浮水印深黑色 */
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
     
     #webgl-container {
       position: absolute;
@@ -27,26 +49,26 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      z-index: 1;
+      z-index: 2; /* 位於背景大文字上方，實現「耳機在前、文字在後」的前後空間層次 */
     }
 
     /* 左側排版區塊 */
     .ui-left {
       position: absolute;
-      top: 8%;
+      top: 6%;
       left: 5%;
-      width: 40%;
-      height: 84%;
+      width: 42%;
+      height: 88%;
       z-index: 10;
       pointer-events: none;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: space-between;
       /* 復古科技框線 */
       border-left: 2px solid #111;
       border-bottom: 2px solid #111;
       padding-left: 30px;
-      padding-bottom: 30px;
+      padding-bottom: 24px;
       color: #111;
     }
 
@@ -56,7 +78,6 @@
       font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 2px;
-      margin-bottom: 40px;
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -68,8 +89,8 @@
 
     /* 條碼裝飾 */
     .barcode {
-      margin-top: 10px;
-      height: 25px;
+      margin-top: 8px;
+      height: 22px;
       width: 150px;
       background: repeating-linear-gradient(
         90deg, 
@@ -86,32 +107,127 @@
 
     /* 主標題 (粗黑體) */
     .main-title {
-      font-size: 6vw;
+      font-size: 5.5vw;
       line-height: 0.9;
       font-weight: 900;
-      margin: 0;
+      margin: 10px 0 0 0;
       letter-spacing: -2px;
     }
     
     .subtitle {
       font-family: 'Space Mono', monospace;
-      margin-top: 15px;
-      font-size: 1.2rem;
+      margin-top: 8px;
+      font-size: 1.1rem;
       letter-spacing: 2px;
-      color: #333;
+      color: #444;
+    }
+
+    /* ==========================================
+       🔥 2. 左側動態等化器圖樣 (Audio Equalizer Graphic)
+       ========================================== */
+    .eq-container {
+      margin: 15px 0;
+      padding: 18px 20px;
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid #111;
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eq-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #111;
+      border-bottom: 1px dashed #aaa;
+      padding-bottom: 6px;
+    }
+
+    .eq-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #ff3333;
+    }
+
+    .eq-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #ff3333;
+      border-radius: 50%;
+      animation: eq-pulse 1s infinite alternate;
+    }
+
+    @keyframes eq-pulse {
+      0% { transform: scale(0.8); opacity: 0.6; }
+      100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px #ff3333; }
+    }
+
+    /* 等化器外框與柱狀體佈局 */
+    .eq-bars-wrapper {
+      height: 85px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 4px 0;
+    }
+
+    .eq-bar-col {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .eq-bar-track {
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: flex-end;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 單支跳動等化器條 */
+    .eq-bar-fill {
+      width: 100%;
+      height: 30%;
+      background: #111;
+      transition: height 0.06s ease-out;
+      border-top: 3px solid #ff3333; /* 紅色頂點指示燈 */
+      position: relative;
+    }
+
+    /* 等化器底部頻段標籤 */
+    .eq-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: #666;
     }
 
     /* 互動動態數據面板 */
     .tech-data-panel {
       pointer-events: auto; /* 允許點擊互動 */
-      margin-top: auto;
       border-top: 2px solid #111;
-      padding-top: 20px;
+      padding-top: 15px;
       font-family: 'Space Mono', monospace;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      gap: 12px;
     }
 
     .data-row {
@@ -120,14 +236,14 @@
     }
 
     .data-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: #666;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .data-value {
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       transition: color 0.1s;
     }
 
@@ -138,12 +254,12 @@
     
     .hint {
       position: absolute;
-      bottom: 40px;
+      bottom: 30px;
       right: 40px;
       text-align: right;
       z-index: 10;
       color: rgba(0,0,0,0.5);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-family: 'Space Mono', monospace;
       letter-spacing: 2px;
       pointer-events: none;
@@ -170,17 +286,51 @@
 </head>
 <body>
 
+  <!-- ==========================================
+       🔥 1. 耳機正後方的巨大粗體背景文字
+       ========================================== -->
+  <div class="bg-giant-text">
+    NOTHING<br>EAR / (01)
+  </div>
+
   <!-- 左側復古科技感排版 -->
   <div class="ui-left">
-    <div class="tech-header">
-      <span>OBJECT STUDY</span>
-      <span>DATE OF RESEARCH // 09.13.26</span>
-      <span>UNIT 01 // TYPE-003</span>
-      <div class="barcode"></div>
+    <div>
+      <div class="tech-header">
+        <span>OBJECT STUDY // UNIT 01</span>
+        <span>DATE OF RESEARCH // 09.13.26</span>
+        <div class="barcode"></div>
+      </div>
+      
+      <h1 class="main-title">NOTHING<br>/ 01</h1>
+      <p class="subtitle">TRANSPARENT AUDIO SYSTEM</p>
     </div>
-    
-    <h1 class="main-title">NOTHING<br>/ 01</h1>
-    <p class="subtitle">TRANSPARENT AUDIO SYSTEM</p>
+
+    <!-- ==========================================
+         🔥 2. 左側動態上下變動的等化器 (Equalizer Graphic)
+         ========================================== -->
+    <div class="eq-container">
+      <div class="eq-header">
+        <span class="eq-status-badge">
+          <span class="eq-dot"></span>
+          SPECTRUM ANALYZER // ACTIVE
+        </span>
+        <span>24-BAND HI-RES</span>
+      </div>
+
+      <div class="eq-bars-wrapper" id="eq-wrapper">
+        <!-- JS 將自動產生 24 根上下跳動的頻段柱狀體 -->
+      </div>
+
+      <div class="eq-labels">
+        <span>32Hz</span>
+        <span>125Hz</span>
+        <span>500Hz</span>
+        <span>2kHz</span>
+        <span>8kHz</span>
+        <span>16kHz</span>
+      </div>
+    </div>
     
     <!-- 互動數據面板 -->
     <div class="tech-data-panel" id="data-panel">
@@ -195,10 +345,6 @@
       <div class="data-row">
         <span class="data-label">AZIMUTH (YAW)</span>
         <span class="data-value" id="val-yaw">000.00°</span>
-      </div>
-      <div class="data-row">
-        <span class="data-label">ELEVATION (PITCH)</span>
-        <span class="data-value" id="val-pitch">000.00°</span>
       </div>
       <div class="data-row" style="cursor: pointer; background: #111; color: #fff; padding: 5px; border: 1px solid #111; transition: all 0.3s;" id="btn-wireframe">
         <span class="data-label" style="color:#aaa;">ACTION COMMAND</span>
@@ -251,6 +397,27 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+    // --- 0. 初始化動態等化器條 (Equalizer Setup) ---
+    const eqWrapper = document.getElementById('eq-wrapper');
+    const BAR_COUNT = 24;
+    const eqBars = [];
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const col = document.createElement('div');
+      col.className = 'eq-bar-col';
+      
+      const track = document.createElement('div');
+      track.className = 'eq-bar-track';
+      
+      const fill = document.createElement('div');
+      fill.className = 'eq-bar-fill';
+      
+      track.appendChild(fill);
+      col.appendChild(track);
+      eqWrapper.appendChild(col);
+      eqBars.push(fill);
+    }
+
     // --- 1. Scene Setup ---
     const container = document.getElementById('webgl-container');
     const loadingUI = document.getElementById('loading');
@@ -283,21 +450,19 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.enablePan = false;
-    controls.enableZoom = true; // 確保允許滑鼠滾輪放大縮小
+    controls.enableZoom = true;
     
-    // **互動事件：與左側 DOM 聯動**
+    // 互動事件與 DOM 聯動
     const dataPanel = document.getElementById('data-panel');
     const statusVal = document.getElementById('val-status');
     const overrideVal = document.getElementById('val-override');
     const yawVal = document.getElementById('val-yaw');
-    const pitchVal = document.getElementById('val-pitch');
     const btnWireframe = document.getElementById('btn-wireframe');
     const valWireframe = document.getElementById('val-wireframe');
     
     let isInteracting = false;
     let isWireframe = false;
 
-    // 建立一個專用的科技感線框材質 (純黑線條)
     const wireframeMaterial = new THREE.MeshBasicMaterial({ 
         color: 0x111111, 
         wireframe: true,
@@ -305,7 +470,6 @@
         opacity: 0.8
     });
 
-    // 線框模式切換邏輯
     btnWireframe.addEventListener('click', () => {
         isWireframe = !isWireframe;
         if(isWireframe) {
@@ -318,19 +482,15 @@
             btnWireframe.style.borderColor = "#111";
         }
         
-        // 遍歷模型並「直接抽換材質」以確保 100% 生效
         if (headphoneModel) {
             headphoneModel.traverse((child) => {
                 if (child.isMesh) {
                     if (isWireframe) {
-                        // 記住原本的材質
                         if (!child.userData.originalMaterial) {
                             child.userData.originalMaterial = child.material;
                         }
-                        // 替換成純線框材質
                         child.material = wireframeMaterial;
                     } else {
-                        // 恢復原本的材質
                         if (child.userData.originalMaterial) {
                             child.material = child.userData.originalMaterial;
                         }
@@ -382,10 +542,6 @@
             const scale = targetSize / maxDim;
             wrapper.scale.set(scale, scale, scale);
             
-            // **不要偏移模型！模型必須留在原點(0,0,0)，這樣才能原地完美自轉**
-            // 我們會透過底下的 camera.setViewOffset 視覺推移整個畫布
-
-            // --- 網頁端動態增強材質 ---
             headphoneModel.traverse((child) => {
                 if (child.isMesh && child.material) {
                     child.material.envMapIntensity = 3.0; 
@@ -431,10 +587,7 @@
       const h = window.innerHeight;
       camera.aspect = w / h;
       
-      // 關鍵魔法：使用 setViewOffset 視覺偏移相機畫布
-      // 這樣相機依然繞著原點(0,0)的模型轉，但畫面會向左錯位，導致模型看起來完美停留在右側！
-      // 參數: (總寬, 總高, x偏移量, y偏移量, 視窗寬, 視窗高)
-      // 將 x 設為負的寬度 20%，模型就會往右移 20% 的距離
+      // 視覺推移相機畫布，讓耳機模型在右側自轉
       camera.setViewOffset(w, h, -w * 0.20, 0, w, h);
       
       camera.updateProjectionMatrix();
@@ -442,27 +595,45 @@
     }
     
     window.addEventListener('resize', updateCameraLayout);
-    updateCameraLayout(); // 初始執行一次排版
+    updateCameraLayout();
 
+    // --- 8. 動態渲染與等化器跳動迴圈 ---
+    let frameCount = 0;
     function animate() {
       requestAnimationFrame(animate);
+      frameCount++;
+      const time = performance.now() * 0.005;
       
+      // 🔥 每 2 幀更新一次等化器柱狀條，呈現充滿音樂律動感的上下跳動效果
+      if (frameCount % 2 === 0 && eqBars.length === BAR_COUNT) {
+        for (let i = 0; i < BAR_COUNT; i++) {
+          // 綜合低頻、中頻旋律波形與高頻隨機律動
+          const bassWave = Math.sin(time * 1.2 + i * 0.28) * 25;
+          const midWave = Math.cos(time * 2.5 - i * 0.45) * 20;
+          const beatFlutter = (Math.random() - 0.5) * 28;
+          
+          // 低音(兩端)與高頻重音加權
+          const freqBoost = (i < 5 || i > 19) ? 22 : 12;
+          
+          let height = 35 + bassWave + midWave + beatFlutter + freqBoost;
+          // 當使用者操作耳機旋轉時，等化器會受感應跳動得更為劇烈高亢！
+          if (isInteracting) {
+            height += Math.random() * 30 + 15;
+          }
+          
+          height = Math.max(8, Math.min(100, height));
+          eqBars[i].style.height = `${height.toFixed(1)}%`;
+        }
+      }
+
       if(headphoneModel) {
           if(!isInteracting) {
               headphoneModel.rotation.y += 0.002;
           }
           
-          // 計算並更新動態數據
-          // 抓取相機相對於原點的經緯度角度
-          const polar = controls.getPolarAngle(); // pitch (0 to PI)
           const azimuthal = controls.getAzimuthalAngle(); // yaw (-PI to PI)
-          
-          const degPitch = (polar * (180/Math.PI) - 90).toFixed(2);
           const degYaw = (azimuthal * (180/Math.PI)).toFixed(2);
-          
-          // 格式化為三位數補零
           yawVal.innerText = String(degYaw).padStart(7, '0') + '°';
-          pitchVal.innerText = String(degPitch).padStart(7, '0') + '°';
       }
 
       controls.update();
