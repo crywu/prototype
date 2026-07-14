@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nothing 耳機 3D Banner 展示 - Antigravity Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #e2e4e6;
+      font-family: 'Space Grotesk', sans-serif;
+      /* 復古科技感細網格背景 */
+      background-image: 
+        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    
+    #webgl-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    /* 左側排版區塊 */
+    .ui-left {
+      position: absolute;
+      top: 8%;
+      left: 5%;
+      width: 40%;
+      height: 84%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      /* 復古科技框線 */
+      border-left: 2px solid #111;
+      border-bottom: 2px solid #111;
+      padding-left: 30px;
+      padding-bottom: 30px;
+      color: #111;
+    }
+
+    /* 頂部科技標籤 */
+    .tech-header {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .tech-header span {
+      display: inline-block;
+    }
+
+    /* 條碼裝飾 */
+    .barcode {
+      margin-top: 10px;
+      height: 25px;
+      width: 150px;
+      background: repeating-linear-gradient(
+        90deg, 
+        #111, 
+        #111 2px, 
+        transparent 2px, 
+        transparent 5px, 
+        #111 5px, 
+        #111 8px, 
+        transparent 8px, 
+        transparent 10px
+      );
+    }
+
+    /* 主標題 (粗黑體) */
+    .main-title {
+      font-size: 6vw;
+      line-height: 0.9;
+      font-weight: 900;
+      margin: 0;
+      letter-spacing: -2px;
+    }
+    
+    .subtitle {
+      font-family: 'Space Mono', monospace;
+      margin-top: 15px;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: #333;
+    }
+
+    /* 互動動態數據面板 */
+    .tech-data-panel {
+      pointer-events: auto; /* 允許點擊互動 */
+      margin-top: auto;
+      border-top: 2px solid #111;
+      padding-top: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .data-row {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .data-label {
+      font-size: 0.7rem;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .data-value {
+      font-weight: 700;
+      font-size: 1.1rem;
+      transition: color 0.1s;
+    }
+
+    /* 互動狀態樣式 */
+    .interacting .data-value {
+      color: #ff3333;
+    }
+    
+    .hint {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      text-align: right;
+      z-index: 10;
+      color: rgba(0,0,0,0.5);
+      font-size: 0.9rem;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 2px;
+      pointer-events: none;
+      animation: pulse 2s infinite;
+    }
+
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      font-size: 1.2rem;
+      font-family: 'Space Mono', monospace;
+      color: #111;
+      letter-spacing: 2px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1.0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 左側復古科技感排版 -->
+  <div class="ui-left">
+    <div class="tech-header">
+      <span>OBJECT STUDY</span>
+      <span>DATE OF RESEARCH // 09.13.26</span>
+      <span>UNIT 01 // TYPE-003</span>
+      <div class="barcode"></div>
+    </div>
+    
+    <h1 class="main-title">NOTHING<br>/ 01</h1>
+    <p class="subtitle">TRANSPARENT AUDIO SYSTEM</p>
+    
+    <!-- 互動數據面板 -->
+    <div class="tech-data-panel" id="data-panel">
+      <div class="data-row">
+        <span class="data-label">SYSTEM STATUS</span>
+        <span class="data-value" id="val-status">IDLE (AUTO-ROTATION)</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">USER OVERRIDE</span>
+        <span class="data-value" id="val-override">INACTIVE</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">AZIMUTH (YAW)</span>
+        <span class="data-value" id="val-yaw">000.00°</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">ELEVATION (PITCH)</span>
+        <span class="data-value" id="val-pitch">000.00°</span>
+      </div>
+      <div class="data-row" style="cursor: pointer; background: #111; color: #fff; padding: 5px; border: 1px solid #111; transition: all 0.3s;" id="btn-wireframe">
+        <span class="data-label" style="color:#aaa;">ACTION COMMAND</span>
+        <span class="data-value" id="val-wireframe">> WIREFRAME_MODE</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="hint">DRAG TO INSPECT -></div>
+  <div id="loading">INITIALIZING SYSTEM...</div>
+
+  <div id="webgl-container"></div>
+
+  <!-- Fallback Error Handler -->
+  <script>
+    window.addEventListener('error', (e) => {
+      const el = document.getElementById('loading');
+      if (el) {
+          el.innerHTML = "SYSTEM ERROR: " + e.message + "<br>CHECK CONSOLE FOR DETAILS.";
+          el.style.color = "red";
+      }
+    });
+    
+    setTimeout(() => {
+        if (!window.threeLoaded) {
+            const el = document.getElementById('loading');
+            if(el && el.innerHTML.includes("INITIALIZING")) {
+                el.innerHTML = "CDN TIMEOUT! MODULES BLOCKED BY FIREWALL/ADBLOCKER.";
+                el.style.color = "red";
+            }
+        }
+    }, 5000);
+  </script>
+
+  <!-- ES Modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    window.threeLoaded = true;
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    // --- 1. Scene Setup ---
+    const container = document.getElementById('webgl-container');
+    const loadingUI = document.getElementById('loading');
+    const scene = new THREE.Scene();
+
+    // --- 2. Camera Setup ---
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(2, 0.5, 4);
+
+    // --- 3. Renderer Setup ---
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    container.appendChild(renderer.domElement);
+
+    // --- 4. Environment Lighting (HDRI) ---
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const cameraLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    cameraLight.position.set(1, 1, 1);
+    camera.add(cameraLight);
+    scene.add(camera);
+
+    // --- 5. Controls ---
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.enablePan = false;
+    controls.enableZoom = true; // 確保允許滑鼠滾輪放大縮小
+    
+    // **互動事件：與左側 DOM 聯動**
+    const dataPanel = document.getElementById('data-panel');
+    const statusVal = document.getElementById('val-status');
+    const overrideVal = document.getElementById('val-override');
+    const yawVal = document.getElementById('val-yaw');
+    const pitchVal = document.getElementById('val-pitch');
+    const btnWireframe = document.getElementById('btn-wireframe');
+    const valWireframe = document.getElementById('val-wireframe');
+    
+    let isInteracting = false;
+    let isWireframe = false;
+
+    // 建立一個專用的科技感線框材質 (純黑線條)
+    const wireframeMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x111111, 
+        wireframe: true,
+        transparent: true,
+        opacity: 0.8
+    });
+
+    // 線框模式切換邏輯
+    btnWireframe.addEventListener('click', () => {
+        isWireframe = !isWireframe;
+        if(isWireframe) {
+            valWireframe.innerText = "> SOLID_MODE";
+            btnWireframe.style.background = "#ff3333";
+            btnWireframe.style.borderColor = "#ff3333";
+        } else {
+            valWireframe.innerText = "> WIREFRAME_MODE";
+            btnWireframe.style.background = "#111";
+            btnWireframe.style.borderColor = "#111";
+        }
+        
+        // 遍歷模型並「直接抽換材質」以確保 100% 生效
+        if (headphoneModel) {
+            headphoneModel.traverse((child) => {
+                if (child.isMesh) {
+                    if (isWireframe) {
+                        // 記住原本的材質
+                        if (!child.userData.originalMaterial) {
+                            child.userData.originalMaterial = child.material;
+                        }
+                        // 替換成純線框材質
+                        child.material = wireframeMaterial;
+                    } else {
+                        // 恢復原本的材質
+                        if (child.userData.originalMaterial) {
+                            child.material = child.userData.originalMaterial;
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    controls.addEventListener('start', () => {
+        isInteracting = true;
+        dataPanel.classList.add('interacting');
+        statusVal.innerText = "TRACKING TARGET...";
+        overrideVal.innerText = "ACTIVE (MANUAL)";
+    });
+
+    controls.addEventListener('end', () => {
+        isInteracting = false;
+        dataPanel.classList.remove('interacting');
+        statusVal.innerText = "IDLE (AUTO-ROTATION)";
+        overrideVal.innerText = "INACTIVE";
+    });
+
+    // --- 6. Load GLB Model ---
+    let headphoneModel;
+    const loader = new GLTFLoader();
+    
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/libs/draco/' );
+    loader.setDRACOLoader( dracoLoader );
+    
+    loader.load(
+        'model.glb', 
+        (gltf) => {
+            headphoneModel = gltf.scene;
+            
+            const box = new THREE.Box3().setFromObject(headphoneModel);
+            const center = box.getCenter(new THREE.Vector3());
+            headphoneModel.position.x = -center.x;
+            headphoneModel.position.y = -center.y;
+            headphoneModel.position.z = -center.z;
+            
+            const wrapper = new THREE.Group();
+            wrapper.add(headphoneModel);
+            
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const targetSize = 2.5; 
+            const scale = targetSize / maxDim;
+            wrapper.scale.set(scale, scale, scale);
+            
+            // **不要偏移模型！模型必須留在原點(0,0,0)，這樣才能原地完美自轉**
+            // 我們會透過底下的 camera.setViewOffset 視覺推移整個畫布
+
+            // --- 網頁端動態增強材質 ---
+            headphoneModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material.envMapIntensity = 3.0; 
+                    
+                    let isDark = false;
+                    if (child.material.color) {
+                        const hsl = { h: 0, s: 0, l: 0 };
+                        child.material.color.getHSL(hsl);
+                        if (hsl.l < 0.2) isDark = true;
+                    }
+
+                    if (!isDark) {
+                        child.material.metalness = 1.0; 
+                        child.material.roughness = 0.05; 
+                    } else {
+                        child.material.metalness = 0.1;
+                        child.material.roughness = 0.6;
+                    }
+                    child.material.needsUpdate = true;
+                }
+            });
+
+            scene.add(wrapper);
+            headphoneModel = wrapper;
+            loadingUI.style.display = 'none';
+        },
+        (xhr) => {
+            if (xhr.lengthComputable) {
+                const percentComplete = Math.round((xhr.loaded / xhr.total) * 100);
+                loadingUI.innerHTML = 'DOWNLOADING COMPONENT... ' + percentComplete + '%';
+            }
+        },
+        (error) => {
+            console.error('An error happened', error);
+            loadingUI.innerHTML = 'SYSTEM ERROR:<br>' + error.message;
+            loadingUI.style.color = 'red';
+        }
+    );
+
+    // --- 7. Animation Loop & Responsive Layout ---
+    function updateCameraLayout() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      
+      // 關鍵魔法：使用 setViewOffset 視覺偏移相機畫布
+      // 這樣相機依然繞著原點(0,0)的模型轉，但畫面會向左錯位，導致模型看起來完美停留在右側！
+      // 參數: (總寬, 總高, x偏移量, y偏移量, 視窗寬, 視窗高)
+      // 將 x 設為負的寬度 20%，模型就會往右移 20% 的距離
+      camera.setViewOffset(w, h, -w * 0.20, 0, w, h);
+      
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    
+    window.addEventListener('resize', updateCameraLayout);
+    updateCameraLayout(); // 初始執行一次排版
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      if(headphoneModel) {
+          if(!isInteracting) {
+              headphoneModel.rotation.y += 0.002;
+          }
+          
+          // 計算並更新動態數據
+          // 抓取相機相對於原點的經緯度角度
+          const polar = controls.getPolarAngle(); // pitch (0 to PI)
+          const azimuthal = controls.getAzimuthalAngle(); // yaw (-PI to PI)
+          
+          const degPitch = (polar * (180/Math.PI) - 90).toFixed(2);
+          const degYaw = (azimuthal * (180/Math.PI)).toFixed(2);
+          
+          // 格式化為三位數補零
+          yawVal.innerText = String(degYaw).padStart(7, '0') + '°';
+          pitchVal.innerText = String(degPitch).padStart(7, '0') + '°';
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+  </script>
+</body>
+</html>
